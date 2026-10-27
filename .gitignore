@@ -1,0 +1,16 @@
+# Virtual Environment
+venv/
+__pycache__/
+*.pyc
+
+# Environment Variables & Tokens
+.env
+
+# Downloads & Temporary files
+downloads/
+*.mp4
+*.mp3
+*.jpg
+*.jpeg
+*.png
+*.webp
