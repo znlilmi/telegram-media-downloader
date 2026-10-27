@@ -25,6 +25,8 @@ from telegram.ext import (
     filters,
 )
 import yt_dlp
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # Load file .env
 load_dotenv()
@@ -44,6 +46,25 @@ DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 # Batas maksimal kirim via bot Telegram standar (50 MB)
 MAX_FILE_SIZE_MB = 50
 MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
+
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"OK - Telegram Media Downloader Bot is running!\n")
+
+    def log_message(self, format, *args):
+        # Mute logging HTTP health check agar console tetap bersih
+        pass
+
+def start_health_check_server():
+    """Menjalankan HTTP server dummy untuk Render Web Service (Free Tier)"""
+    port = int(os.getenv("PORT", "0"))
+    if port > 0:
+        server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
+        logger.info(f"Health check HTTP server aktif di port {port}")
+        threading.Thread(target=server.serve_forever, daemon=True).start()
 
 # Regex untuk mendeteksi link/URL
 URL_REGEX = re.compile(
@@ -231,6 +252,9 @@ def main():
         return
 
     print("🤖 Memulai Bot Telegram Media Downloader...")
+    # Jalankan health check server jika ada env PORT (misal di Render Web Service)
+    start_health_check_server()
+
     # Timeout 300 detik (5 menit) agar upload file video besar ke Telegram tidak timed out
     request_config = HTTPXRequest(
         connect_timeout=60.0,
